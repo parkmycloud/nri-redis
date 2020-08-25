@@ -14,7 +14,7 @@
 
 // Package redis is a client for the Redis database.
 //
-// The Redigo FAQ (https://github.com/garyburd/redigo/wiki/FAQ) contains more
+// The Redigo FAQ (https://github.com/gomodule/redigo/wiki/FAQ) contains more
 // documentation about this package.
 //
 // Connections
@@ -38,7 +38,7 @@
 //
 //  n, err := conn.Do("APPEND", "key", "value")
 //
-// The Do method converts command arguments to binary strings for transmission
+// The Do method converts command arguments to bulk strings for transmission
 // to the server as follows:
 //
 //  Go Type                 Conversion
@@ -48,7 +48,7 @@
 //  float64                 strconv.FormatFloat(v, 'g', -1, 64)
 //  bool                    true -> "1", false -> "0"
 //  nil                     ""
-//  all other types         fmt.Print(v)
+//  all other types         fmt.Fprint(w, v)
 //
 // Redis command reply types are represented using the following Go types:
 //
@@ -101,7 +101,7 @@
 //
 // Connections support one concurrent caller to the Receive method and one
 // concurrent caller to the Send and Flush methods. No other concurrency is
-// supported including concurrent calls to the Do method.
+// supported including concurrent calls to the Do and Close methods.
 //
 // For full concurrent access to Redis, use the thread-safe Pool to get, use
 // and release a connection from within a goroutine. Connections returned from
@@ -174,4 +174,4 @@
 // non-recoverable error such as a network error or protocol parsing error. If
 // Err() returns a non-nil value, then the connection is not usable and should
 // be closed.
-package redis // import "github.com/garyburd/redigo/redis"
+package redis
