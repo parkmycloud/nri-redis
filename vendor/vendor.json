@@ -33,6 +33,12 @@
 			"revisionTime": "2020-06-23T21:05:08Z"
 		},
 		{
+			"checksumSHA1": "ly7QfaFEzdRRipLBzuA2QpLhLJc=",
+			"path": "github.com/mna/redisc",
+			"revision": "3ead1690290260d40878296feac41941af71c29f",
+			"revisionTime": "2020-02-03T23:41:52Z"
+		},
+		{
 			"checksumSHA1": "ZfId5ZYn7jmL0xTxooHcxrLlXoA=",
 			"path": "github.com/newrelic/infra-integrations-sdk/args",
 			"revision": "1d56d083ff58c63604755586fe1a65036a064de7",
