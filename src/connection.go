@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gomodule/redigo/redis"
+	"github.com/mna/redisc"
 	"github.com/newrelic/infra-integrations-sdk/log"
 )
 
@@ -35,27 +36,57 @@ func (c configConnectionError) Error() string {
 	return "can't execute redis 'CONFIG' command: " + c.cause.Error()
 }
 
-func newRedisCon(hostname string, port int, unixSocket string, password string) (conn, error) {
+func newRedisPool(addr string, opts ...redis.DialOption) (*redis.Pool, error) {
+	return &redis.Pool{
+		MaxIdle:   10,
+		MaxActive: 2,
+		Wait:      false,
+		Dial: func() (redis.Conn, error) {
+			return redis.Dial("tcp", addr, opts...)
+		},
+	}, nil
+}
 
-	connectTimeout := redis.DialConnectTimeout(time.Second * 5)
-	readTimeout := redis.DialReadTimeout(time.Second * 5)
-	writeTimeout := redis.DialWriteTimeout(time.Second * 5)
-	redisPass := redis.DialPassword(password)
+func newRedisCon(hostname string, port int, unixSocket string, password string, cluster bool, tls bool) (conn, error) {
+
+	var dialOptions = []redis.DialOption{
+		redis.DialConnectTimeout(time.Second * 5),
+		redis.DialReadTimeout(time.Second * 5),
+		redis.DialWriteTimeout(time.Second * 5),
+		redis.DialPassword(password),
+		redis.DialUseTLS(tls),
+		redis.DialTLSSkipVerify(tls),
+	}
 
 	var c redis.Conn
 	var err error
 
 	switch {
 	case unixSocket != "":
-		c, err = redis.Dial("unix", unixSocket, connectTimeout, readTimeout, writeTimeout, redisPass)
+		c, err = redis.Dial("unix", unixSocket, dialOptions...)
 		if err != nil {
 			return nil, fmt.Errorf("Redis connection through Unix Socket failed, got error: %v", err)
 		}
 		log.Debug("Connected to Redis through Unix Socket")
 	case hostname != "" && port > 0:
 		URL := hostname + ":" + strconv.Itoa(port)
-		c, err = redis.Dial("tcp", URL, connectTimeout, readTimeout, writeTimeout, redisPass)
-		if err != nil {
+
+		type Pool interface {
+			Get() redis.Conn
+		}
+		var pool Pool
+
+		if cluster {
+			pool = &redisc.Cluster{
+				StartupNodes: []string{URL},
+				DialOptions:  dialOptions,
+				CreatePool:   newRedisPool,
+			}
+		} else {
+			pool, _ = newRedisPool(URL, dialOptions...)
+		}
+		c = pool.Get()
+		if c.Err() != nil {
 			return nil, fmt.Errorf("Redis connection through TCP failed, got error: %v", err)
 		}
 		log.Debug("Connected to Redis through TCP")
